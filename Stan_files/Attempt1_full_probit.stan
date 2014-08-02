@@ -133,7 +133,7 @@ model {
 ## likelihood ##
   for(i in 1:I) {
     real eta ; 
-    eta <- ( 
+    eta <- Phi_approx( 
       b_0[ region[i] ] 
       + b_URB[ region[i] ] * URB[i] 
       + b_AA[ region[i] ] * AA[i] 
@@ -141,8 +141,7 @@ model {
       + b_DEM * DEM[i] 
       + b_LABORCOMM * LABORCOMM[i] 
     ) ;
-    
-    VOTE[i] ~ bernoulli_logit(eta) ;
+    VOTE[i] ~ bernoulli(eta) ;
   }
   
 }

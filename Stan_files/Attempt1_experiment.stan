@@ -49,17 +49,40 @@ transformed parameters {
   }
  
 ## fill in B_bar ##
+#  for (r in 1:R) { 
+#    real b_neigh_seg[K, off[r + 1] - off[r]] ;
+#    for (k in 1:K) {
+#      for (l in (off[r] + 1):off[r+1]) {
+#        b_neigh_seg[k,l] <- b_neigh[k,l] ; 
+#      }
+#      B_bar[k, r] <- mean(b_neigh_seg[k]) ;
+#    }
+#  }  
+
   for (r in 1:R) { 
-    real b_neigh_seg[K, off[r + 1] - off[r]] ;
-    for (k in 1:K) {
-      for (l in (off[r] + 1):off[r+1]) {
-        b_neigh_seg[k,l] <- b_neigh[k,l] ; 
-      }
-      B_bar[k, r] <- mean(b_neigh_seg[k]) ;
+    int len;
+    int lb;
+    int ub;
+    real seg1[len] ;
+    real seg2[len] ;
+    real seg3[len] ;
+    real seg4[len] ;
+    
+    len <- off[r+1] - off[r] ;
+    lb <- off[r] + 1 ;
+    ub <- off[r+1] ;
+
+    for (l in lb:ub) {
+      seg1[l] <- b_neigh[1,l] ; 
+      seg2[l] <- b_neigh[2,l] ; 
+      seg3[l] <- b_neigh[3,l] ; 
+      seg4[l] <- b_neigh[4,l] ; 
     }
-  }  
-
-
+    B_bar[1, r] <- mean(seg1) ;
+    B_bar[2, r] <- mean(seg2) ;
+    B_bar[3, r] <- mean(seg3) ;
+    B_bar[4, r] <- mean(seg4) ;
+  }
 
 ## fill in dev, tau_lik & d ##
   for (k in 1:K) { 
@@ -81,12 +104,15 @@ model {
   b_LABORCOMM   ~ normal(0.0, 100.0) ;
 
 ## stochastic functions of hyperparameters ##
-  for (k in 1:K) {
-    for (r in 1:R) {
-      B[k,r] ~ normal(B_bar[k,r], dev[k,r]) ;
-    }
-  }
+//  for (k in 1:K) {
+//    for (r in 1:R) {
+//      B[k,r] ~ normal(B_bar[k,r], dev[k,r]) ;
+//    }
+//  }
 
+  for (k in 1:K) {
+    B[k] ~ normal(B_bar[k], dev[k]) ;
+  }
   
 ## likelihood ##
   for(i in 1:I) {

@@ -1,8 +1,47 @@
+library(MCMCpack)
+library(rstan)
 
-load("posterior_samples.RData")
 
+# load the stan output ----------------------------------------------------
+setwd("/Users/jgabry/Desktop/COLUMBIA/Stuff_for_Wawro/Rsync")
+
+# load("sflist1.RData")
+# load("sflist2.RData")
+# stanfit1 <- sflist2stanfit(sflist1)
+# stanfit2 <- sflist2stanfit(sflist2)
+# stanfit <- sflist2stanfit(list(stanfit1, stanfit2))
+# save(stanfit, file = "all_chains_stanfit_local.RData")
+
+load("all_chains_stanfit_local.RData")
+print(stanfit)
+monitor(stanfit)
+# convergence diagnostics -------------------------------------------------
+PARS <- c("b_0","b_URB","b_AA","b_UNION", "b_DEM", "b_LABORCOMM")
+
+# summary statistics
+monitor(stanfit)
+library(xtable)
+print(xtable(monitor(stanfit), digits = 1), 
+      sanitize.text.funtion = function(x){x}, 
+      tabular.environment = 'longtable', 
+      booktabs = TRUE,
+      format.args = list(digits = 3))
+
+
+
+# traceplots
+traceplot(stanfit, pars = PARS)
+
+
+# dependence plot 
+source("dependence.R")
+
+svg(filename = "plots/dependence_plot.svg")
+invisible(dependence(stanfit))
+dev.off()
 
 # extract the posterior samples -------------------------------------------
+extractStan <- extract(stanfit, pars = PARS)
 b_DEM <- extractStan$b_DEM
 b_LABORCOMM <- extractStan$b_LABORCOMM
 b_0 <- extractStan$b_0
@@ -49,7 +88,7 @@ v.names <- c("Region-Period Effect", "Union Pct", "African-American Pct", "Urban
 names(v.names) <- c("b_0", "b_UNION", "b_AA", "b_URB")
 
 
-pdf(file = "votes_regression_figs_Stan.pdf")
+pdf(file = "plots/votes_regression_figs_Stan_probit.pdf")
 par(mfcol=c(4,3))
 for (X in names(r.names)) {
   for (Y in names(v.names)) {
@@ -84,7 +123,7 @@ leg.text_lab <- c(paste("Mean:", round(mean(b_LABORCOMM), 3)),
 
 
 
-pdf(file = "b_DEM_b_LABORCOMM_stan.pdf")
+pdf(file = "plots/b_DEM_b_LABORCOMM_stan_new.pdf")
 par(mfrow = c(1,2))
 truehist(b_DEM, col = "skyblue", border = "skyblue", yaxt = "n")
 # abline(v = dens_dem$x[which.max(dens_dem$y)])
@@ -96,3 +135,4 @@ legend("topleft", leg.text_lab, bty = "n", title = "Estimates:", cex = 0.7)
 # abline(v = dens_lab$x[which.max(dens_lab$y)])
 dev.off()
 par(mfrow = c(1,1))
+

@@ -1,7 +1,7 @@
 # Load data ---------------------------------------------------------------
 # _________________________________________________________________________
 
-setwd("/Users/jgabry/Desktop/COLUMBIA/Stuff_for_Wawro/Stan/My Code/farhang_katznelson_rep")
+setwd("/Users/jgabry/Desktop/COLUMBIA/Stuff_for_Wawro/farhang_katznelson_rep")
 
 loadData.path <- "Data/rollcall.logit.inter.all.names.txt"
 Data <- read.table(loadData.path, header = TRUE)
@@ -124,12 +124,12 @@ library(MCMCpack)
 library(parallel)
 library(rstan)
 
-setwd("/Users/jgabry/Desktop/COLUMBIA/Stuff_for_Wawro/Stan/My Code/farhang_katznelson_rep")
+setwd("/Users/jgabry/Desktop/COLUMBIA/Stuff_for_Wawro/Github/farhang_katznelson_rep/Stan_files")
 
 # compile C++ code
-stanFile.path <- "Stan_files/experiments/experiment2.stan"
+stanFile.path <- "Attempt1_experiment.stan"
 PARS <- c("B", "b_DEM", "b_LABORCOMM")
-fit <- stan(file = stanFile.path, data = data.list, chains = 0)
+fit.test <- stan(file = stanFile.path, data = data.list, chains = 1, iter = 50, pars = PARS)
 
 
 # to run the model one chain at a time
