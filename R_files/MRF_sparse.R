@@ -58,8 +58,10 @@ mvn_prec_fit_spatial <- mclapply(X = 1:2,
                                        chain_id = k,
                                        refresh = -1) })
 
-mvn_prec_fit_spatial <- mclapply(X = 1:2, mc.cores = 6, FUN = function(k) {
-  stan(fit = mvn_prec_fit, seed = 123478, data = mvn_prec_data, 
-       chains = 1, iter = 2000, chain_id = k, refresh = -1) 
+mvn_prec_fit_spatial_big <- mclapply(X = 1:6, mc.cores = 6, FUN = function(k) {
+  stan(fit = mvn_prec_fit, seed = 13579, data = mvn_prec_data, 
+       chains = 1, iter = 4000, chain_id = k, refresh = -1) 
   })
+save(mvn_prec_fit_spatial_big, file = "mvn_prec_fit_spatial_big.RData")
+
 
