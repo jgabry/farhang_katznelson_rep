@@ -1,3 +1,5 @@
+# Written by Ben Goodrich
+
 library(coda)
 library(MCMCpack)
 library(energy)

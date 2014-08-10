@@ -1,3 +1,34 @@
+#' Construct an array of design matrices to pass as data to \code{stan} (\pkg{rstan})
+#'
+#'
+#' @param df The data frame containing the variables in \code{varlist}.
+#' @param varlist A character vector naming variables in \code{df}.
+#' @param M An incidence matrix with \code{nrow(M) = nrow(df)}. Only required 
+#' if \code{region.vector} is not specified. See 'Details'. 
+#' @param region.vector A numeric vector with length \code{N = \code{nrow(df)}, and where
+#' \code{region.vector[i]} gives the region number for observation \code{i}. The number of 
+#' unique region values (henceforth \code{K}) should be the same as the number of cells in 
+#' the map. \code{region.vector} is only required if an incidence matrix \code{M} is not 
+#' specified. See 'Details'.
+#' @return An array \code{X} with (\code{dim = c(length(varlist), nrow(M), ncol(M))}). That is,
+#' if \code{L = length(varlist)} then \code{X} is an array of \code{L} matrices of \code{dim(M)}.
+#' The matrices in \code{X} are essentially incidence matrices with the 1s replaced by values
+#' of the variables in \code{varlist}. This is accomplished via element-wise multiplication.    
+#' @details The user must specify either \code{M} or \code{region.vector}. If \code{M} is not
+#' specified then it will be constructed via an internal call to \code{make_incidence_matrix(region.vector)}.
+#' @author Jonah Gabry <jsg2201@@columbia.edu>
+#' @export
+#' @examples
+#' \dontrun{
+#' # Suppose we have a data frame df which contains five variables V1, V2, ... V5. 
+#' # Then the array \code{X} defined by
+#' X <- make_design_matrix_array(df, varlist = c("V2, V3"), M)
+#' # contains 2 matrices with dimensions dim(M) where corresponding to the element-wise 
+#' # products M*V2 and M*V3.
+#' }
+#' 
+
+
 make_design_matrix_array <- function(df, varlist, M, region.vector) {
 # varlist = character vector naming variables in the data
 # M = incidence matrix (optional) 
