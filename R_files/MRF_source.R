@@ -20,7 +20,7 @@ map.matrix[2, ] <- c(5, rep(8, nc - 2), 5)
 map.matrix[3, ] <- c(3, rep(5, nc - 2), 3)
 map.matrix
 
-map.index <- matrix(1:nr*nc, nr, nc)
+map.index <- matrix(1:(nr*nc), nr, nc)
 colnames(map.index) <- colnames(map.matrix)
 rownames(map.index) <- rownames(map.matrix)
 map.index
@@ -68,17 +68,22 @@ Data$region.name <- mapvalues(Data$region,
                               from = 1:3, 
                               to = c("DS", "BS", "NS"))
 
+
+
 region <- rep(NA, R)
+NS <- map.index[1,]
+BS <- map.index[2,]
+DS <- map.index[3,]
+
 for(i in 1:8){
-  region[with(Data, region.name == "NS" & period == i)] <- seq(1, 22, 3)[i]
-  region[with(Data, region.name == "BS" & period == i)] <- seq(2, 23, 3)[i]
-  region[with(Data, region.name == "DS" & period == i)] <- seq(3, 24, 3)[i]
+  region[with(Data, region.name == "NS" & period == i)] <- NS[i]
+  region[with(Data, region.name == "BS" & period == i)] <- BS[i]
+  region[with(Data, region.name == "DS" & period == i)] <- DS[i]
 }
 
 
-
 #### incidence and design matrices ####
-M <- mat.or.vec(N,R)
+M <- matrix(NA, nrow = N, ncol = R)
 for(n in 1:N){
   for(r in 1:R){
     M[n,r] <- ifelse(region[n] == r, 1, 0)
@@ -90,11 +95,11 @@ X_aa <- M*Data$aapct
 X_union <- M*Data$unionpop
 
 
-
-X <- array(NA, dim = c(3,N,R))
+X <- array(NA, dim = c(4,N,R))
 X[1,,] <- X_urb
 X[2,,] <- X_aa
 X[3,,] <- X_union
+X[4,,] <- M # for the intercept/region-period effects
 
 
 #### area-adjancency matrix ####
@@ -106,31 +111,72 @@ for (i in 1:R) {
 }
 
 #### degree matrix ####
-D <- mat.or.vec(R, R)
-for (i in 1:R) {
-  for (j in 1:R) {
-    D[i, j] <- ifelse(i == j, sum(A[i, ]), 0.0)
+D <- diag(rowSums(A))
+
+
+#### other covariates ####
+make_Z <- function(include.intercept = FALSE){
+  Z <- with(Data, cbind(dem, laborcomm))
+  ones <- rep(1, nrow(Data))
+  if (include.intercept == TRUE) {
+    Z <- cbind(ones, Z)
   }
+  return(Z)
 }
 
-map.matrix
-#### other covariates ####
-Z <- with(Data, cbind(dem, laborcomm))
+Z <- make_Z(include.intercept = FALSE)
+Z_with_intercept <- make_Z(include.intercept = TRUE)
+
+
 
 #### outcome variable ####
 Y <- Data$prolabor
 
 
-# STAN --------------------------------------------------------------------
-# _________________________________________________________________________
+### sparse matrix stuff ###
+A_sparse <- which(A == 1, arr.ind=TRUE)
+# remove duplicates (because matrix is symmetric)
+A_sparse <- A_sparse[A_sparse[,1] < A_sparse[,2],]
+A_N <- dim(A_sparse)[1]
+A1 <- A_sparse[,1]
+A2 <- A_sparse[,2]
 
 
 
-data.list <- list(Z = Z,
-                  X = X,
-                  Y = Y,
-                  M = M,
-                  A = A, 
-                  #                   D = D,
-                  R = R,
-                  N = N)
+### data list for stan ###
+mvn_prec_data <- list(Y = Y,
+                      X = X,
+                      Z = Z,
+                      M = M,
+#                       Z = Z_with_intercept,
+                      A = A, 
+                      A_N = A_N, 
+                      A1 = A1, 
+                      A2 = A2,
+                      d = diag(D),
+                      R = R,
+                      N = nrow(M),
+                      C = ncol(Z),
+#                       C = ncol(Z_with_intercept), 
+                      J = dim(X)[1])
+
+
+
+library(rstan)
+set_cppo("fast")
+
+fit.compile <- stan(file = "SpatialStan_08_11_2014.stan", data = mvn_prec_data, chains = 0)
+fit.test <- stan(fit = fit.compile, data = mvn_prec_data, chains = 1, iter = 30, refresh = 5)
+
+library(parallel)
+rng.seed <- sample.int(.Machine$integer.max, 1)
+sflist_Aug_7_pm <- mclapply( X = 1:6, mc.cores = 6, FUN = function(k) {
+    stan(fit = fit.compile, seed = rng.seed, data = mvn_prec_data, chains = 1,
+         iter = 4000, chain_id = k, verbose = TRUE, refresh = -1) 
+    })
+
+
+save(sflist_Aug_7_pm, file = "sflist_Aug_7_pm.RData")
+
+
+
